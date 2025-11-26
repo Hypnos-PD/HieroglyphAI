@@ -16,7 +16,16 @@ const App: React.FC = () => {
   // --- State ---
   const [theme, setTheme] = useState<Theme>('ink');
   const [inputValue, setInputValue] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const RESULTS_KEY = 'hieroglyph_results';
+  const MAX_RESULTS = 100;
+  const [results, setResults] = useState<SearchResult[]>(() => {
+    try {
+      const raw = window.localStorage.getItem(RESULTS_KEY);
+      return raw ? (JSON.parse(raw) as SearchResult[]) : [];
+    } catch (e) {
+      return [];
+    }
+  });
   const [loading, setLoading] = useState(false);
   const [currentVariantId, setCurrentVariantId] = useState<string>('daily');
   const [customVariants, setCustomVariants] = useState<VariantType[]>([]);
@@ -59,7 +68,10 @@ const App: React.FC = () => {
     }));
 
     // Prepend new results to top
-    setResults(prev => [...newResults, ...prev]);
+    setResults(prev => {
+      const merged = [...newResults, ...prev];
+      return merged.slice(0, MAX_RESULTS);
+    });
 
     // Process in parallel (limit concurrency in a real app, but ok for demo)
     const promises = newResults.map(async (res) => {
@@ -97,6 +109,20 @@ const App: React.FC = () => {
 
   const handleToggleFavorite = (result: SearchResult) => {
      setResults(prev => prev.map(r => r.id === result.id ? { ...r, isFavorite: !r.isFavorite } : r));
+  };
+
+  // Persist results to localStorage
+  React.useEffect(() => {
+    try {
+      window.localStorage.setItem(RESULTS_KEY, JSON.stringify(results));
+    } catch (e) {
+      // ignore localStorage errors
+    }
+  }, [results]);
+
+  const handleClearResults = () => {
+     setResults([]);
+     try { window.localStorage.removeItem(RESULTS_KEY); } catch (e) {}
   };
 
   const toggleTheme = () => {
@@ -192,6 +218,13 @@ const App: React.FC = () => {
             onCreate={(v) => setCustomVariants([...customVariants, v])}
             onDelete={(id) => setCustomVariants(prev => prev.filter(v => v.id !== id))}
           />
+
+          <div className="flex justify-end mb-6">
+            <button
+              onClick={handleClearResults}
+              className="text-xs px-3 py-2 bg-stone-100 dark:bg-zinc-700 rounded-md hover:bg-stone-200 dark:hover:bg-zinc-600"
+            >清空检索历史</button>
+          </div>
 
           {/* Results Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
