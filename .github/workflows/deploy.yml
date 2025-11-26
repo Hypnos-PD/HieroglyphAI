@@ -1,5 +1,9 @@
 name: Build and deploy to GitHub Pages (main/docs)
 
+# Allow the workflow to write repository contents so GITHUB_TOKEN can push docs/
+permissions:
+  contents: write
+
 on:
   push:
     branches:
@@ -31,17 +35,14 @@ jobs:
 
       - name: Prepare docs/ from dist/
         run: |
-          # remove old docs and copy new build
           rm -rf docs
           mkdir -p docs
           cp -a dist/. docs/
 
-          # If you keep a public/CNAME, copy it to docs/CNAME so Pages picks up custom domain
           if [ -f public/CNAME ]; then
             cp -f public/CNAME docs/CNAME
           fi
 
-          # SPA fallback: also copy index.html to 404.html
           if [ -f docs/index.html ]; then
             cp -f docs/index.html docs/404.html || true
           fi
@@ -55,14 +56,11 @@ jobs:
 
           git add -A docs
 
-          # If no changes, exit cleanly
           if git diff --staged --quiet; then
             echo "No changes to docs — exiting."
             exit 0
           fi
 
-          # commit with [skip ci] to avoid retriggering workflow
           git commit -m "chore(pages): update docs from CI [skip ci]"
 
-          # push to the current branch (master). Using the checked-out repo remote.
           git push origin HEAD:master
