@@ -1,0 +1,5 @@
+{
+  "name": "HieroglyphAI",
+  "description": "An AI-powered Kanji association image retrieval tool that finds images from the internet based on character meaning and user-defined contexts.",
+  "requestFramePermissions": []
+}
