@@ -1,46 +1,68 @@
-name: Build and deploy to GitHub Pages
+name: Build and deploy to GitHub Pages (main/docs)
 
 on:
   push:
-    branches: [ main, master ]
+    branches:
+      - master
   workflow_dispatch:
-
-permissions:
-  contents: read
-  pages: write
-  id-token: write
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: Check out repository (master only)
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
 
-      - name: Setup Node.js
+      - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: 18
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build production files
+      - name: Build (Vite)
         run: npm run build
-        # Note: CI does NOT inject GEMINI_API_KEY by default. If you need to build with a key, set it manually
-        # in a separate (non-public) workflow or build locally. This avoids leaking secrets into public assets.
+        env:
+          NODE_ENV: production
 
-      - name: Show build output (debug)
+      - name: Prepare docs/ from dist/
         run: |
-          echo "dist contents:" 
-          ls -la dist || true
+          # remove old docs and copy new build
+          rm -rf docs
+          mkdir -p docs
+          cp -a dist/. docs/
 
-      - name: Upload artifact for GitHub Pages
-        uses: actions/upload-pages-artifact@v1
-        with:
-          path: ./dist
+          # If you keep a public/CNAME, copy it to docs/CNAME so Pages picks up custom domain
+          if [ -f public/CNAME ]; then
+            cp -f public/CNAME docs/CNAME
+          fi
 
-      - name: Deploy to GitHub Pages
-        id: deploy
-        uses: actions/deploy-pages@v1
+          # SPA fallback: also copy index.html to 404.html
+          if [ -f docs/index.html ]; then
+            cp -f docs/index.html docs/404.html || true
+          fi
+
+      - name: Commit and push docs/ back to master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A docs
+
+          # If no changes, exit cleanly
+          if git diff --staged --quiet; then
+            echo "No changes to docs — exiting."
+            exit 0
+          fi
+
+          # commit with [skip ci] to avoid retriggering workflow
+          git commit -m "chore(pages): update docs from CI [skip ci]"
+
+          # push to the current branch (master). Using the checked-out repo remote.
+          git push origin HEAD:master
