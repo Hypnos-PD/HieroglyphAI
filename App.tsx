@@ -28,7 +28,14 @@ const App: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [currentVariantId, setCurrentVariantId] = useState<string>('daily');
-  const [customVariants, setCustomVariants] = useState<VariantType[]>([]);
+  const [customVariants, setCustomVariants] = useState<VariantType[]>(() => {
+    try {
+      const raw = window.localStorage.getItem('hieroglyph_custom_variants');
+      return raw ? (JSON.parse(raw) as VariantType[]) : [];
+    } catch (e) {
+      return [];
+    }
+  });
   const [filters, setFilters] = useState<FilterSettings>(DEFAULT_FILTERS);
   const [apiKey, setApiKey] = useState<string>(() => {
     try {
@@ -119,6 +126,15 @@ const App: React.FC = () => {
       // ignore localStorage errors
     }
   }, [results]);
+
+  // Persist custom variants to localStorage
+  React.useEffect(() => {
+    try { window.localStorage.setItem('hieroglyph_custom_variants', JSON.stringify(customVariants)); } catch (e) {}
+  }, [customVariants]);
+
+  const handleEditVariant = (updated: VariantType) => {
+    setCustomVariants(prev => prev.map(v => v.id === updated.id ? updated : v));
+  };
 
   const handleClearResults = () => {
      setResults([]);
@@ -217,6 +233,7 @@ const App: React.FC = () => {
             onSelect={setCurrentVariantId}
             onCreate={(v) => setCustomVariants([...customVariants, v])}
             onDelete={(id) => setCustomVariants(prev => prev.filter(v => v.id !== id))}
+            onEdit={(v) => setCustomVariants(prev => prev.map(pv => pv.id === v.id ? v : pv))}
           />
 
           <div className="flex justify-end mb-6">
