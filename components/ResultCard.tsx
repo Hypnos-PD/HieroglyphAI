@@ -37,8 +37,8 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onToggleFavorite, onRem
         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
       </button>
 
-      {/* Visual Area */}
-      <div className="relative aspect-square w-full bg-stone-100 dark:bg-zinc-900 overflow-hidden group/image">
+      {/* Visual Area: make this taller so the fallback search buttons are visible and images are larger */}
+      <div className="relative w-full h-2/3 bg-stone-100 dark:bg-zinc-900 overflow-hidden group/image">
         {result.loading ? (
           <div className="absolute inset-0 flex flex-col items-center justify-center text-stone-400">
             <div className="animate-spin mb-4 rounded-full h-10 w-10 border-b-2 border-ink-600 dark:border-jade-400"></div>
@@ -127,14 +127,14 @@ const ResultCard: React.FC<ResultCardProps> = ({ result, onToggleFavorite, onRem
       </div>
 
       {/* Content Area */}
-      <div className="p-5 flex-1 flex flex-col justify-between bg-white dark:bg-zinc-800 relative z-20">
+      <div className="p-5 flex-1 min-h-0 overflow-y-auto flex flex-col justify-between bg-white dark:bg-zinc-800 relative z-20">
         <div>
           <div className="mb-2">
             <span className="inline-block px-2 py-0.5 rounded text-[10px] bg-stone-100 dark:bg-zinc-700 text-stone-500 dark:text-zinc-400 border border-stone-200 dark:border-zinc-600">
                 {result.variantId === 'daily' ? '日常' : '自定义'}
             </span>
           </div>
-          <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed font-serif line-clamp-4 text-justify">
+          <p className="text-base text-stone-700 dark:text-stone-300 leading-relaxed font-serif text-justify">
             {result.loading ? "正在构思联想..." : result.explanation || "暂无解释"}
           </p>
         </div>
